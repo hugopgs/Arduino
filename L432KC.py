@@ -11,7 +11,7 @@ class L432KC():
     """
     Simple Class for serial USB communication with nucleoboard  L432KC 
     """
-    __version__ = "v1.1.0"
+    __version__ = "v0.0"
 
     def __init__(self, port:str ="COM11", baudrate: int=115200, connect: bool=False, verbose: bool=False, timeout: float=0.2):
         super().__init__(port,baudrate)
@@ -24,7 +24,9 @@ class L432KC():
         self._timeout = timeout
         self.verbose = verbose
         self.id = {}
-
+        if connect: 
+            self.connect()
+            
     def connect(self):
         '''  connect the computer to Device'''
         try:
@@ -66,15 +68,17 @@ class L432KC():
         self.txBufSize = txBufSize
         self._ser.set_buffer_size(rx_size=rxBufSize, tx_size=txBufSize)
 
-    def _serial_write(self, string):
-        """
-        sends command to Nucleo Board
+    def _serial_write(self, cmd: str):
+        """Send command to microcontroller using serial communication protocol
+
+        Args:
+            cmd (str): the cmd to send to the microcontroller
         """
 
-        string = string + "\n"
-        if ((self._ser.out_waiting < (self.txBufSize - (string.encode('utf-8')).__len__())) and (
+        cmd = cmd + "\n"
+        if ((self._ser.out_waiting < (self.txBufSize - (cmd.encode('utf-8')).__len__())) and (
                 self._ser.out_waiting >= 0)):
-            self._ser.write(string.encode('utf-8'))
+            self._ser.write(cmd.encode('utf-8'))
             time.delay(0.1) # needed for startup sequence to generate enough deadtime for the arduino to read all commands
         else:
             logger.warning(
@@ -102,11 +106,14 @@ class L432KC():
 
 
     def _query(self, msg: str) -> str:
+        """Send a command to the device and read its answer.
+        Args:
+            msg (str): command send to the microcontroller
+
+        Returns:
+            str: answer from the microcontroller
         """
-        Function to send a command to the device and read its answer.
-        :param msg: str
-        :return: str
-        """
+
         try:
             self._serial_write(msg)
             time.delay(0.200)
@@ -128,24 +135,29 @@ class L432KC():
         logger.info(msg_ret)
         return msg_ret
 
-
-    def set_pin(self,pin:int, state: int) -> bool:
-        """
-        set the state of a pin
-        :param n: int
-        :return: bool  True: relay NOT triggered (Positive voltage), False: Relais triggered (Negative voltage).
-        """
-        msg_ret = self._query("*IDN?")
-        if self.verbose == True:
-            logger.info(f"d: {msg_ret}  ")
-
-
+    
     def _serial_disconnect(self):
+        """Disconnect the arduino from the computer
+        """
         self._ser.close()
         logger.info("INFO: Connection to Device closed. ")
 
-    def exemple_function(self, param1, param2):
-        msg_ret = self._query(f"message{param1}{param2}")
+
+#########################################Exemple of functions#################################################################
+
+    def exemple_function1(self,n:int) -> str:
+        """Exemple of function that take an argument, 
+        send the command to the microcontroller and get the answer
+        """
+        msg_ret = self._query("exemple_function1 "+str(n))
         if self.verbose == True:
-            logger.info(f"d: {msg_ret}  ")
+            logger.info(f"d: {msg_ret}")
+
+    def exemple_function2(self):
+        """Exemple of function that doesn't take an argument, 
+        send the command to the microcontroller and get the answer
+        """
+        msg_ret = self._query("exemple_function2")
+        if self.verbose == True:
+            logger.info(f"d: {msg_ret}")
         pass
